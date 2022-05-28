@@ -1,11 +1,14 @@
 import re
 import json
 import time
+import FileReader
+import file_type
 
-class GtfReader:
 
-    def __init__(self, filename):
-        self.filename = filename
+class GtfReader(FileReader.FileReader):
+
+    def __init__(self):
+        super(FileReader, self).__init__()
         self.gtf_records = {}
 
     def extract_record(self, line):
@@ -25,7 +28,7 @@ class GtfReader:
         return gtf_record
 
     def create_dict(self):
-        with open(self.filename) as file:
+        with open(self.filepath) as file:
             for line in file:
                 if "##" in line:
                     continue
@@ -42,7 +45,7 @@ class GtfReader:
 
 if __name__ == '__main__':
     start_time = time.time()
-    fl = GtfReader("gencode.v40.annotation.gtf")
-    fl.create_dict()
-    fl.save_to_json()
-    print(time.time()-start_time)
+    #fl = GtfReader("gencode.v40.annotation.gtf")
+    #fl.create_dict()
+    #fl.save_to_json()
+    #print(time.time()-start_time)

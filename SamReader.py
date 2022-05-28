@@ -1,10 +1,11 @@
 import re
+import FileReader
 
 
-class SamReader:
+class SamReader(FileReader.FileReader):
 
-    def __init__(self, filename, chromosome, start, stop):
-        self.filename = filename
+    def __init__(self, chromosome, start, stop):
+        super(SamReader, self).__init__()
         self.chromosome = str(chromosome)
         self.start = start
         self.stop = stop
@@ -20,7 +21,7 @@ class SamReader:
         return False
 
     def read_file(self):
-        with open(self.filename) as file:
+        with open(self.filepath) as file:
             for line in file:
                 if self.check_line(line):
                     self.sam_records.append(line)
