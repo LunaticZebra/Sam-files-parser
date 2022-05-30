@@ -8,7 +8,7 @@ import file_type
 class GtfReader(FileReader.FileReader):
 
     def __init__(self):
-        super(FileReader, self).__init__()
+        super(GtfReader, self).__init__()
         self.gtf_records = {}
 
     def extract_record(self, line):
@@ -45,7 +45,8 @@ class GtfReader(FileReader.FileReader):
 
 if __name__ == '__main__':
     start_time = time.time()
-    #fl = GtfReader("gencode.v40.annotation.gtf")
-    #fl.create_dict()
-    #fl.save_to_json()
-    #print(time.time()-start_time)
+    fl = GtfReader()
+    fl.set_filepath("gencode.v40.annotation.gtf")
+    fl.create_dict()
+    fl.save_to_json()
+    print(time.time()-start_time)
