@@ -7,6 +7,7 @@ class UiMainWindow(QMainWindow):
 
     def __init__(self):
         super(UiMainWindow, self).__init__()
+        self.listeners = []
 
     def setup_ui(self):
         self.setObjectName("MainWindow")
@@ -109,14 +110,20 @@ class UiMainWindow(QMainWindow):
         self.sam_dest_btn.setText(_translate("MainWindow", "Browse"))
         self.pushButton_6.setText(_translate("MainWindow", "Proceed"))
 
+    def add_listener(self, obj):
+        self.listeners.append(obj)
 
     def add_gtf_reader(self, gtf_reader):
         self.gtf_reader = gtf_reader
+
+    def set_gtf_path_reader(self, filepath):
+        filepath = self.gtf_filepath
 
     def __set_buttons_functions(self):
         self.gtf_browse_btn.clicked.connect(self.__browse_gtf)
         self.sam_src_btn.clicked.connect(self.__browse_sam_src)
         self.sam_dest_btn.clicked.connect(self.__browse_sam_dest)
+        self.gtf_browse_btn.clicked.connect(self.set_gtf_path_reader)
 
     def __browse_gtf(self):
         fname = QtWidgets.QFileDialog.getOpenFileName(self, "Choose .gtf file", "C:/Users/user/Desktop", ".gtf files (*.gtf)")

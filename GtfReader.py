@@ -29,13 +29,18 @@ class GtfReader(FileReader.FileReader):
 
     def create_dict(self):
         with open(self.filepath) as file:
+            licznik = 0
             for line in file:
-                if "##" in line:
+                if "#" in line:
                     continue
-                line_split = re.split("\t", file.readline())
+                line_split = re.split("\t", line)
+                licznik = licznik+1
                 gtf_record = self.extract_record(line_split)
                 if len(gtf_record) > 0:
                     self.gtf_records[gtf_record['gene_id']] = gtf_record
+            print(licznik)
+
+
 
     def save_to_json(self):
         json_str = json.dumps(self.gtf_records)
@@ -46,7 +51,7 @@ class GtfReader(FileReader.FileReader):
 if __name__ == '__main__':
     start_time = time.time()
     fl = GtfReader()
-    fl.set_filepath("gencode.v40.annotation.gtf")
+    fl.set_filepath("Arabidopsis_thaliana.TAIR10.53.gtf")
     fl.create_dict()
     fl.save_to_json()
     print(time.time()-start_time)

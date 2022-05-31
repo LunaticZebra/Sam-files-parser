@@ -1,6 +1,6 @@
 import re
 import FileReader
-
+import time
 
 class SamReader(FileReader.FileReader):
 
@@ -13,6 +13,8 @@ class SamReader(FileReader.FileReader):
 
     def check_line(self, line):
         line_split = re.split("\t", line)
+        if "@" in line_split[0]:
+            return True
         if line_split[2] == self.chromosome:
             position = int(line_split[3])
             if self.start <= position <= self.stop:
@@ -25,7 +27,6 @@ class SamReader(FileReader.FileReader):
             for line in file:
                 if self.check_line(line):
                     self.sam_records.append(line)
-                    print(line)
 
     def show_lines(self):
         for record in self.sam_records:
@@ -38,6 +39,9 @@ class SamReader(FileReader.FileReader):
 
 
 if __name__ == "__main__":
-    sr = SamReader("test.sam", 1, 51, 206)
+    start_time = time.time()
+    sr = SamReader(1, 10942648, 10944727)
+    sr.set_filepath("C:\\Users\\macie\\OneDrive\\Desktop\\Python-app_resources\\APIT-20-1.sam")
     sr.read_file()
     sr.save_file()
+    print(time.time()-start_time)
