@@ -2,6 +2,7 @@ import re
 import json
 import time
 import FileReader
+import threading
 import file_type
 
 
@@ -28,18 +29,21 @@ class GtfReader(FileReader.FileReader):
         return gtf_record
 
     def create_dict(self):
+
         with open(self.filepath) as file:
             for line in file:
                 if "##" in line:
                     continue
-                line_split = re.split("\t", file.readline())
+                line_split = re.split("\t", line)
                 gtf_record = self.extract_record(line_split)
                 if len(gtf_record) > 0:
                     self.gtf_records[gtf_record['gene_id']] = gtf_record
 
-    def save_to_json(self):
+        return self.gtf_records
+
+    def save_to_json(self, filename):
         json_str = json.dumps(self.gtf_records)
-        with open("gtf_records.json", "w") as json_file:
+        with open((filename + ".json"), "w") as json_file:
             json_file.write(json_str)
 
 
@@ -48,5 +52,5 @@ if __name__ == '__main__':
     fl = GtfReader()
     fl.set_filepath("gencode.v40.annotation.gtf")
     fl.create_dict()
-    fl.save_to_json()
+    fl.save_to_json("cos")
     print(time.time()-start_time)

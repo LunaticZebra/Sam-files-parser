@@ -1,12 +1,15 @@
+import threading
+
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtWidgets import QPushButton, QLabel, QLineEdit, QListWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, \
     QMenuBar, QStatusBar, QListWidgetItem
-
+from GtfReader import GtfReader
 
 class UiMainWindow(QMainWindow):
 
     def __init__(self):
         super(UiMainWindow, self).__init__()
+        self.gene_id_selected = ""
 
     def setup_ui(self):
         self.setObjectName("MainWindow")
@@ -92,7 +95,7 @@ class UiMainWindow(QMainWindow):
         self.statusBar = QStatusBar(self)
         self.statusBar.setObjectName("statusBar")
         self.setStatusBar(self.statusBar)
-        self.__set_buttons_functions()
+        self.__set_widgets_functions()
         self.__retranslate_ui()
         QtCore.QMetaObject.connectSlotsByName(self)
 
@@ -110,23 +113,44 @@ class UiMainWindow(QMainWindow):
         self.pushButton_6.setText(_translate("MainWindow", "Proceed"))
 
 
-    def add_gtf_reader(self, gtf_reader):
+    def add_gtf_reader(self, gtf_reader : GtfReader):
         self.gtf_reader = gtf_reader
 
-    def __set_buttons_functions(self):
+    def __set_widgets_functions(self):
         self.gtf_browse_btn.clicked.connect(self.__browse_gtf)
         self.sam_src_btn.clicked.connect(self.__browse_sam_src)
         self.sam_dest_btn.clicked.connect(self.__browse_sam_dest)
+        self.gtf_load_btn.clicked.connect(self.__load_gene_id)
+        self.gene_list.itemActivated.connect(self.__gene_selected_event)
 
     def __browse_gtf(self):
         fname = QtWidgets.QFileDialog.getOpenFileName(self, "Choose .gtf file", "C:/Users/user/Desktop", ".gtf files (*.gtf)")
-        self.gtf_filepath.setText(fname[0])
-        self.gtf_filename = str(self.gtf_filepath.text())
+        if fname[0] != "":
+            self.gtf_filepath.setText(fname[0])
+            self.gtf_filename = str(self.gtf_filepath.text())
+            self.gtf_reader.set_filepath(fname[0])
+            self.gene_dictionary = self.gtf_reader.create_dict()
+            self.__update_gene_list(self.gene_dictionary.keys())
+
+    def __update_gene_list(self, gene_ids):
+        for gene_id in gene_ids:
+            self.update_list(gene_id)
 
     def __browse_sam_src(self):
-        fname = QtWidgets.QFileDialog.getOpenFileName(self, "Choose .sam file", "C:/Users/user/Desktop", ".sam files (*.sam)")
+        fname = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose .sam file", "C:/Users/user/Desktop")
         self.sam_src_filepath.setText(fname[0])
 
+    def __load_gene_id(self):
+        print("Clicked")
+        if self.gene_id_selected != "":
+            self.gene_selected = self.gene_dictionary[self.gene_id_selected]
+            print(self.gene_selected)
+        #dodaj pokazywanie sie obecnie zaladowanego genu
+        #dodaj popup ze nie wybrano gene_id
+
+    def __gene_selected_event(self, item):
+        self.gene_id_selected = item.text()
+        print(item.text())
 
     def __browse_sam_dest(self):
         fname = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose destination directory", "C:/Users/user/Desktop")
