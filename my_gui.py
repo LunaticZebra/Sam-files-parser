@@ -1,12 +1,13 @@
-import asyncio
+import time
+import os
 
-from PyQt6 import QtCore, QtWidgets
-from PyQt6.QtCore import QObject, pyqtSignal, QThread
-from PyQt6.QtWidgets import QPushButton, QLabel, QLineEdit, QListWidget, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, \
-    QMenuBar, QStatusBar, QListWidgetItem
 from GtfReader import GtfReader
 from SamReader import SamReader
-import os
+from PyQt6 import QtCore, QtWidgets
+from PyQt6.QtCore import QObject, pyqtSignal, QThread
+from PyQt6.QtWidgets import QPushButton, QLabel, QLineEdit, QListWidget, QMainWindow, QVBoxLayout, QHBoxLayout, \
+    QWidget, QMenuBar, QStatusBar, QMessageBox
+
 
 class GtfWorker(QObject):
     finished = pyqtSignal()
@@ -17,15 +18,18 @@ class GtfWorker(QObject):
         self.ui = ui
 
     def run(self):
+
         if self.fname != "":
             gtf_reader = GtfReader()
             self.ui.gtf_filepath.setText(self.fname)
+            self.ui.set_status("loading " + self.fname)
             self.ui.gtf_filename = str(self.ui.gtf_filepath.text())
-            print(self.fname)
             gtf_reader.set_filepath(self.fname)
             self.ui.gene_dictionary = gtf_reader.create_dict()
             self.ui.update_gene_list(self.ui.gene_dictionary.keys())
+        self.ui.set_status()
         self.finished.emit()
+
 
 class SamWorker(QObject):
     finished = pyqtSignal()
@@ -34,19 +38,25 @@ class SamWorker(QObject):
         super().__init__()
         self.sam_files = sam_files
         self.ui = ui
+        self.start_time = time.time()
 
     def run(self):
         sam_reader = SamReader()
         sam_reader.set_gene(self.ui.gene_selected)
         self.ui.proceed_btn.setEnabled(False)
-        print("Pracuje")
+        for file in self.sam_files:
+            print(file)
         for filename in self.sam_files:
+            self.ui.set_status("working on  " + filename)
             sam_reader.set_filepath(self.ui.sam_src_filepath.text() + "/" + filename)
             sam_reader.read_file()
             sam_reader.save_file(self.ui.sam_dest_filepath.text() + "/" + self.ui.gene_id_selected + "_" + filename)
-        print("Ok")
+            sam_reader.clear()
         self.ui.proceed_btn.setEnabled(True)
+        self.ui.set_status("All files loaded (" + str(round(time.time() - self.start_time, 2)) + "s)")
         self.finished.emit()
+
+
 class UiMainWindow(QMainWindow):
 
     def __init__(self):
@@ -57,7 +67,6 @@ class UiMainWindow(QMainWindow):
         self.gene_dictionary = {}
         self.sam_files = []
         self.setup_ui()
-
 
     def setup_ui(self):
         self.setObjectName("MainWindow")
@@ -136,8 +145,8 @@ class UiMainWindow(QMainWindow):
         self.proceed_btn.setMaximumSize(QtCore.QSize(120, 16777215))
         self.proceed_btn.setObjectName("pushButton_6")
         self.verticalLayout.addWidget(self.proceed_btn)
-        self.statusLabel = QLabel("Status: ")
-        self.verticalLayout.addWidget(self.statusLabel)
+        self.status_label = QLabel("Status:")
+        self.verticalLayout.addWidget(self.status_label)
         self.verticalLayout_4.addLayout(self.verticalLayout)
         self.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(self)
@@ -164,24 +173,24 @@ class UiMainWindow(QMainWindow):
         self.sam_dest_btn.setText(_translate("MainWindow", "Browse"))
         self.proceed_btn.setText(_translate("MainWindow", "Proceed"))
 
-    def add_gtf_reader(self, gtf_reader:GtfReader):
+    def add_gtf_reader(self, gtf_reader: GtfReader):
         self.gtf_reader = gtf_reader
 
-    def add_sam_reader(self, sam_reader:SamReader):
+    def add_sam_reader(self, sam_reader: SamReader):
         self.sam_reader = sam_reader
-
 
     def __set_widgets_functions(self):
         self.gtf_browse_btn.clicked.connect(self.__browse_gtf)
         self.sam_src_btn.clicked.connect(self.__browse_sam_src)
         self.sam_dest_btn.clicked.connect(self.__browse_sam_dest)
         self.gtf_load_btn.clicked.connect(self.__load_gene_id)
-        self.gene_list.itemActivated.connect(self.__gene_selected_event)
+        self.gene_list.itemClicked.connect(self.__gene_selected_event)
         self.proceed_btn.clicked.connect(self.__proceed_btn)
         self.gene_id_line.textEdited.connect(self.__update_autocompletion)
 
     def __browse_gtf(self):
-        fname = QtWidgets.QFileDialog.getOpenFileName(self, "Choose .gtf file", "C:/Users/user/Desktop", ".gtf files (*.gtf)")
+        fname = QtWidgets.QFileDialog.getOpenFileName(self, "Choose .gtf file", "C:/Users/user/Desktop",
+                                                      ".gtf files (*.gtf)")
         self.gtf_thread = QThread()
         self.gtf_worker = GtfWorker(fname[0], self)
         self.gtf_worker.moveToThread(self.gtf_thread)
@@ -192,17 +201,19 @@ class UiMainWindow(QMainWindow):
         self.gtf_thread.start()
 
     def __browse_sam_src(self):
-        fname = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose folder with .sam files", "C:/Users/user/Desktop")
-        self.sam_src_filepath.setText(fname)
+        fname = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose folder with .sam files",
+                                                           "C:/Users/user/Desktop")
         if fname != "":
+            self.sam_src_filepath.setText(fname)
             for file in os.listdir(fname):
                 if file.endswith('.sam'):
                     self.sam_files.append(file)
-                    print(file)
 
     def __browse_sam_dest(self):
-        fname = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose destination directory", "C:/Users/user/Desktop")
-        self.sam_dest_filepath.setText(fname)
+        fname = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose destination directory",
+                                                           "C:/Users/user/Desktop")
+        if fname != "":
+            self.sam_dest_filepath.setText(fname)
 
     def __update_autocompletion(self):
         search = self.gene_id_line.text()
@@ -219,8 +230,10 @@ class UiMainWindow(QMainWindow):
             self.sam_thread.finished.connect(self.sam_thread.deleteLater)
             self.sam_thread.start()
 
+    def set_status(self, status=""):
+        self.status_label.setText("Status : " + status)
 
-    def update_gene_list(self, gene_id_dict, phrase = ""):
+    def update_gene_list(self, gene_id_dict, phrase=""):
         if phrase == "":
             for gene_id in gene_id_dict:
                 self.__update_list(gene_id)
@@ -229,17 +242,33 @@ class UiMainWindow(QMainWindow):
             for gene_id in gene_id_dict:
                 if str(gene_id).startswith(phrase):
                     self.__update_list(gene_id)
+
+    def closeEvent(self, event):
+        reply = QMessageBox.question(self, 'Quit', 'Are you sure you want to quit?',
+                                     QMessageBox.StandardButton.Yes |
+                                     QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            event.accept()
+        else:
+            event.ignore()
+
     def __update_list(self, item):
         self.gene_list.addItem(str(item))
 
+    def __show_not_loaded(self):
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        msg_box.setText("Gene id wasn't selected. Please select gene id by double-clicking item on a list")
+        msg_box.setWindowTitle("Gene id not selected")
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.exec()
+
     def __gene_selected_event(self, item):
         self.gene_id_selected = item.text()
-        #print(item.text())
-    def __load_gene_id(self, item):
+
+    def __load_gene_id(self):
         if self.gene_id_selected != "":
             self.gene_selected = self.gene_dictionary[self.gene_id_selected]
-            self.current_gene_label.setText("Current gene loaded: " + str(self.gene_selected).strip("{}"))
-            #print(self.gene_selected)
-        #dodaj popup, jezeli nie wybrano zadnego gene_id i kliknieto "Load"
-
-
+            self.current_gene_label.setText("Currently loaded gene: " + str(self.gene_selected).strip("{}"))
+        else:
+            self.__show_not_loaded()

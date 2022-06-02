@@ -1,15 +1,11 @@
 import re
-import json
-import time
-import FileReader
-import file_type
 
 
-class GtfReader(FileReader.FileReader):
+class GtfReader:
 
     def __init__(self):
-        super(GtfReader, self).__init__()
         self.gtf_records = {}
+        self.filepath = ""
 
     def extract_record(self, line):
         if line[2] == "gene":
@@ -22,7 +18,8 @@ class GtfReader(FileReader.FileReader):
 
             gene_id = re.split(" ", attributes_list[0])
             gene_id = gene_id[1].strip('"')
-            gtf_record = {"gene_id": gene_id, "gene_name": gene_name, "chromosome": line[0], "start": line[3], "stop": line[4]}
+            gtf_record = {"gene_id": gene_id, "gene_name": gene_name, "chromosome": line[0],
+                          "start": line[3], "stop": line[4]}
         else:
             gtf_record = {}
         return gtf_record
@@ -39,16 +36,5 @@ class GtfReader(FileReader.FileReader):
 
         return self.gtf_records
 
-    def save_to_json(self):
-        json_str = json.dumps(self.gtf_records)
-        with open("gtf_records.json", "w") as json_file:
-            json_file.write(json_str)
-
-
-if __name__ == '__main__':
-    start_time = time.time()
-    fl = GtfReader()
-    fl.set_filepath("Arabidopsis_thaliana.TAIR10.53.gtf")
-    fl.create_dict()
-    fl.save_to_json()
-    print(time.time()-start_time)
+    def set_filepath(self, filepath):
+        self.filepath = filepath
