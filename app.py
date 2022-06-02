@@ -1,22 +1,17 @@
 from PyQt6.QtWidgets import QApplication
 from my_gui import UiMainWindow
 from GtfReader import GtfReader
+from SamReader import SamReader
 import sys
 
-class Obiekt:
-    def __init__(self):
-        self.filepath = ""
-    def main(self):
-        app = QApplication(sys.argv)
-        ui = UiMainWindow()
-        ui.setup_ui()
-        ui.show()
-        ui.update_list(5)
-        gtf_r = GtfReader()
-        gtf_r.set_filepath()
-        ui.set_gtf_path_reader()
-        app.exec()
+
+def main():
+    app = QApplication(sys.argv)
+    ui = UiMainWindow()
+    ui.setup_ui()
+    ui.show()
+    ui.add_gtf_reader(GtfReader())
+    ui.add_sam_reader(SamReader())
+    app.exec()
 if __name__ == "__main__":
-    ob = Obiekt()
-    ob.main()
-    print(ob.filepath)
+    main()

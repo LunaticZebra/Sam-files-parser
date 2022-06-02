@@ -4,12 +4,17 @@ import time
 
 class SamReader(FileReader.FileReader):
 
-    def __init__(self, chromosome, start, stop):
+    def __init__(self):
         super(SamReader, self).__init__()
-        self.chromosome = str(chromosome)
-        self.start = start
-        self.stop = stop
+        self.chromosome = ""
+        self.start = -1
+        self.stop = -1
         self.sam_records = []
+
+    def set_gene(self, gene):
+        self.chromosome = gene["chromosome"]
+        self.start = int(gene["start"])
+        self.stop = int(gene["stop"])
 
     def check_line(self, line):
         line_split = re.split("\t", line)
@@ -32,8 +37,8 @@ class SamReader(FileReader.FileReader):
         for record in self.sam_records:
             print(record)
 
-    def save_file(self):
-        with open("result.sam", "w") as file:
+    def save_file(self, path):
+        with open(path, "w") as file:
             for record in self.sam_records:
                 file.write(record)
 

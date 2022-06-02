@@ -29,18 +29,15 @@ class GtfReader(FileReader.FileReader):
 
     def create_dict(self):
         with open(self.filepath) as file:
-            licznik = 0
             for line in file:
                 if "#" in line:
                     continue
                 line_split = re.split("\t", line)
-                licznik = licznik+1
                 gtf_record = self.extract_record(line_split)
                 if len(gtf_record) > 0:
                     self.gtf_records[gtf_record['gene_id']] = gtf_record
-            print(licznik)
 
-
+        return self.gtf_records
 
     def save_to_json(self):
         json_str = json.dumps(self.gtf_records)
