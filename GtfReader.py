@@ -1,12 +1,11 @@
 import re
-import json
-import time
+
 
 class GtfReader:
 
-    def __init__(self, filename):
-        self.filename = filename
+    def __init__(self):
         self.gtf_records = {}
+        self.filepath = ""
 
     def extract_record(self, line):
         if line[2] == "gene":
@@ -19,30 +18,23 @@ class GtfReader:
 
             gene_id = re.split(" ", attributes_list[0])
             gene_id = gene_id[1].strip('"')
-            gtf_record = {"gene_id": gene_id, "gene_name": gene_name, "chromosome": line[0], "start": line[3], "stop": line[4]}
+            gtf_record = {"gene_id": gene_id, "gene_name": gene_name, "chromosome": line[0],
+                          "start": line[3], "stop": line[4]}
         else:
             gtf_record = {}
         return gtf_record
 
     def create_dict(self):
-        with open(self.filename) as file:
+        with open(self.filepath) as file:
             for line in file:
-                if "##" in line:
+                if "#" in line:
                     continue
-                line_split = re.split("\t", file.readline())
+                line_split = re.split("\t", line)
                 gtf_record = self.extract_record(line_split)
                 if len(gtf_record) > 0:
                     self.gtf_records[gtf_record['gene_id']] = gtf_record
 
-    def save_to_json(self):
-        json_str = json.dumps(self.gtf_records)
-        with open("gtf_records.json", "w") as json_file:
-            json_file.write(json_str)
+        return self.gtf_records
 
-
-if __name__ == '__main__':
-    start_time = time.time()
-    fl = GtfReader("gencode.v40.annotation.gtf")
-    fl.create_dict()
-    fl.save_to_json()
-    print(time.time()-start_time)
+    def set_filepath(self, filepath):
+        self.filepath = filepath
