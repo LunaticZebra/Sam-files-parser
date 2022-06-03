@@ -44,16 +44,16 @@ class SamWorker(QObject):
         sam_reader = SamReader()
         sam_reader.set_gene(self.ui.gene_selected)
         self.ui.proceed_btn.setEnabled(False)
-        for file in self.sam_files:
-            print(file)
+        counter = 1
         for filename in self.sam_files:
-            self.ui.set_status("working on  " + filename)
+            self.ui.set_status(f"working on {filename} ({counter}/{len(self.sam_files)})")
             sam_reader.set_filepath(self.ui.sam_src_filepath.text() + "/" + filename)
             sam_reader.read_file()
             sam_reader.save_file(self.ui.sam_dest_filepath.text() + "/" + self.ui.gene_id_selected + "_" + filename)
             sam_reader.clear()
+            counter += 1
         self.ui.proceed_btn.setEnabled(True)
-        self.ui.set_status("All files loaded (" + str(round(time.time() - self.start_time, 2)) + "s)")
+        self.ui.set_status(f"All files loaded ({str(round(time.time() - self.start_time, 2))}s)")
         self.finished.emit()
 
 
