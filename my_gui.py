@@ -46,7 +46,9 @@ class SamWorker(QObject):
         counter = 1
         for filename in self.sam_files:
             self.ui.set_status(f"working on {filename} ({counter}/{len(self.sam_files)})")
-            sam_reader.set_filepath(filename)
+
+            sam_reader.set_filepath(filename)=======
+           
             sam_reader.read_file()
             filename_addon = ""
             for gene in self.ui.genes_selected:
