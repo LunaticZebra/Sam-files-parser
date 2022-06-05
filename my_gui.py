@@ -41,19 +41,24 @@ class SamWorker(QObject):
 
     def run(self):
         sam_reader = SamReader()
-        sam_reader.set_gene(self.ui.gene_selected)
+        sam_reader.set_genes(self.ui.genes_selected)
         self.ui.proceed_btn.setEnabled(False)
         counter = 1
         for filename in self.sam_files:
             self.ui.set_status(f"working on {filename} ({counter}/{len(self.sam_files)})")
-            sam_reader.set_filepath(self.ui.sam_src_filepath.text() + "/" + filename)
+            sam_reader.set_filepath(filename)
             sam_reader.read_file()
-            sam_reader.save_file(self.ui.sam_dest_filepath.text() + "/" + self.ui.gene_id_selected + "_" + filename)
+            filename_addon = ""
+            for gene in self.ui.genes_selected:
+                filename_addon += gene["gene_id"]
+            sam_reader.save_file(self.ui.sam_dest_filepath.text() + "/" +
+                                 filename_addon + "_" + filename.split("/")[-1])
             sam_reader.clear()
             counter += 1
         self.ui.proceed_btn.setEnabled(True)
         self.ui.set_status(f"All files loaded ({str(round(time.time() - self.start_time, 2))}s)")
         self.finished.emit()
+
 
 
 class UiMainWindow(QMainWindow):
@@ -62,12 +67,12 @@ class UiMainWindow(QMainWindow):
         super(UiMainWindow, self).__init__()
         self.gtf_filename = ""
         self.gene_id_selected = ""
-        self.gene_selected = ""
+        self.genes_selected = []
         self.gene_dictionary = {}
         self.sam_files = []
-        self.setup_ui()
+        self.__setup_ui()
 
-    def setup_ui(self):
+    def __setup_ui(self):
         self.setObjectName("MainWindow")
         self.resize(773, 589)
         self.setMaximumSize(QtCore.QSize(773, 589))
@@ -105,12 +110,21 @@ class UiMainWindow(QMainWindow):
         self.gene_list = QListWidget(self.centralwidget)
         self.gene_list.setObjectName("gene_list")
         self.verticalLayout_2.addWidget(self.gene_list)
-        self.gtf_load_btn = QPushButton(self.centralwidget)
-        self.gtf_load_btn.setMaximumSize(QtCore.QSize(64, 16777215))
-        self.gtf_load_btn.setObjectName("gtf_load_btn")
-        self.verticalLayout_2.addWidget(self.gtf_load_btn)
-        self.current_gene_label = QLabel("No .gtf file has been chosen")
+        self.gene_load_btn = QPushButton(self.centralwidget)
+        self.gene_load_btn.setMaximumSize(QtCore.QSize(64, 16777215))
+        self.gene_load_btn.setObjectName("gtf_load_btn")
+        self.genes_clear_btn = QPushButton(self.centralwidget)
+        self.genes_clear_btn.setMaximumSize(QtCore.QSize(64, 16777215))
+        self.genes_clear_btn.setObjectName("genes_clear_btn")
+        self.horizontalLayout_1 = QHBoxLayout()
+        self.horizontalLayout_1.addWidget(self.gene_load_btn)
+        self.horizontalLayout_1.addWidget(self.genes_clear_btn)
+        self.horizontalLayout_1.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_1)
+        self.current_gene_label = QLabel("No gene currently selected")
+        self.loaded_genes = QLabel("Currently loaded genes :")
         self.verticalLayout_2.addWidget(self.current_gene_label)
+        self.verticalLayout_2.addWidget(self.loaded_genes)
         self.verticalLayout_4.addLayout(self.verticalLayout_2)
         self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName("verticalLayout")
@@ -165,27 +179,23 @@ class UiMainWindow(QMainWindow):
         self.label_2.setText(_translate("MainWindow", ".gtf file path: "))
         self.gtf_browse_btn.setText(_translate("MainWindow", "Browse"))
         self.label.setText(_translate("MainWindow", "Gene ID :"))
-        self.gtf_load_btn.setText(_translate("MainWindow", "Load"))
+        self.gene_load_btn.setText(_translate("MainWindow", "Load"))
         self.src_label.setText(_translate("MainWindow", "Source:"))
         self.sam_src_btn.setText(_translate("MainWindow", "Browse"))
         self.dest_label.setText(_translate("MainWindow", "Destination:"))
         self.sam_dest_btn.setText(_translate("MainWindow", "Browse"))
         self.proceed_btn.setText(_translate("MainWindow", "Proceed"))
-
-    def add_gtf_reader(self, gtf_reader: GtfReader):
-        self.gtf_reader = gtf_reader
-
-    def add_sam_reader(self, sam_reader: SamReader):
-        self.sam_reader = sam_reader
+        self.genes_clear_btn.setText(_translate("MainWindow", "Clear"))
 
     def __set_widgets_functions(self):
         self.gtf_browse_btn.clicked.connect(self.__browse_gtf)
         self.sam_src_btn.clicked.connect(self.__browse_sam_src)
         self.sam_dest_btn.clicked.connect(self.__browse_sam_dest)
-        self.gtf_load_btn.clicked.connect(self.__load_gene_id)
+        self.gene_load_btn.clicked.connect(self.__load_gene_id)
         self.gene_list.itemClicked.connect(self.__gene_selected_event)
         self.proceed_btn.clicked.connect(self.__proceed_btn)
         self.gene_id_line.textEdited.connect(self.__update_autocompletion)
+        self.genes_clear_btn.clicked.connect(self.__clear_genes_list)
 
     def __browse_gtf(self):
         fname = QtWidgets.QFileDialog.getOpenFileName(self, "Choose .gtf file", "C:/Users/user/Desktop",
@@ -210,7 +220,7 @@ class UiMainWindow(QMainWindow):
             text = ""
             for file in files:
                 print(file)
-                text += file.split("/")[-1]
+                text += file.split("/")[-1] + ";"
             self.sam_src_filepath.setText(text)
             for file in files:
                 self.sam_files.append(file)
@@ -226,7 +236,7 @@ class UiMainWindow(QMainWindow):
         self.update_gene_list(self.gene_dictionary.keys(), search)
 
     def __proceed_btn(self):
-        if self.sam_src_filepath.text() != "" and self.sam_dest_filepath.text() != "" and self.gene_selected != "":
+        if self.sam_src_filepath.text() != "" and self.sam_dest_filepath.text() != "" and len(self.genes_selected) > 0:
             self.sam_thread = QThread()
             self.sam_worker = SamWorker(self.sam_files, self)
             self.sam_worker.moveToThread(self.sam_thread)
@@ -271,10 +281,16 @@ class UiMainWindow(QMainWindow):
 
     def __gene_selected_event(self, item):
         self.gene_id_selected = item.text()
+        self.current_gene_label.setText("Selected gene: " + \
+                                        str(self.gene_dictionary[self.gene_id_selected]).strip("{}"))
 
     def __load_gene_id(self):
         if self.gene_id_selected != "":
-            self.gene_selected = self.gene_dictionary[self.gene_id_selected]
-            self.current_gene_label.setText("Currently loaded gene: " + str(self.gene_selected).strip("{}"))
+            self.genes_selected.append(self.gene_dictionary[self.gene_id_selected])
+            self.loaded_genes.setText(self.loaded_genes.text() + ";" + self.gene_id_selected)
         else:
             self.__show_not_loaded()
+
+    def __clear_genes_list(self):
+        self.genes_selected = []
+        self.loaded_genes.setText("Currently loaded genes :")
