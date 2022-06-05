@@ -47,7 +47,7 @@ class SamWorker(QObject):
         for filename in self.sam_files:
             self.ui.set_status(f"working on {filename} ({counter}/{len(self.sam_files)})")
 
-            sam_reader.set_filepath(filename)=======
+            sam_reader.set_filepath(filename)
            
             sam_reader.read_file()
             filename_addon = ""
@@ -60,7 +60,6 @@ class SamWorker(QObject):
         self.ui.proceed_btn.setEnabled(True)
         self.ui.set_status(f"All files loaded ({str(round(time.time() - self.start_time, 2))}s)")
         self.finished.emit()
-
 
 
 class UiMainWindow(QMainWindow):
@@ -283,7 +282,7 @@ class UiMainWindow(QMainWindow):
 
     def __gene_selected_event(self, item):
         self.gene_id_selected = item.text()
-        self.current_gene_label.setText("Selected gene: " + \
+        self.current_gene_label.setText("Selected gene: " +
                                         str(self.gene_dictionary[self.gene_id_selected]).strip("{}"))
 
     def __load_gene_id(self):
